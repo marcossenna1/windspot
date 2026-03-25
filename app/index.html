@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kite Spots Dashboard</title>
+<link rel="stylesheet" href="/css/styles.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+</head>
+<body>
+<div id="drag-overlay"></div>
+<div class="app" id="app">
+
+  <!-- TOP CHROME -->
+  <div class="topchrome">
+    <div class="logo">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:inline-block;vertical-align:middle;margin-right:4px">
+        <line x1="2" y1="2" x2="16" y2="16" stroke="red" stroke-width="3" stroke-linecap="round"/>
+        <line x1="16" y1="2" x2="2" y2="16" stroke="red" stroke-width="3" stroke-linecap="round"/>
+      </svg>WindSpot</div>
+    <div class="search-wrap">
+      <svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" style="flex-shrink:0;opacity:.4"><circle cx="6" cy="6" r="4"/><line x1="9.5" y1="9.5" x2="13" y2="13"/></svg>
+      <input id="sinput" placeholder="Search spots…" oninput="onSearch(this.value)" onfocus="onSearch(this.value)"/>
+      <span class="s-clear" id="sclr" onclick="clearS()">&#x2715;</span>
+      <div class="sdrop" id="sdrop"></div>
+    </div>
+    <button class="addspot-btn" id="addspot-btn" onclick="toggleAddSpot()" title="Add Kite Spot">
+      <svg width="15" height="17" viewBox="0 0 15 17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M7.5 1C4.46 1 2 3.46 2 6.5c0 4.75 5.5 9.5 5.5 9.5s5.5-4.75 5.5-9.5C13 3.46 10.54 1 7.5 1z"/>
+        <line x1="7.5" y1="4.5" x2="7.5" y2="8.5"/>
+        <line x1="5.5" y1="6.5" x2="9.5" y2="6.5"/>
+      </svg>
+    </button>
+    <div class="chrome-chips">
+      <div class="chip active" onclick="setFilter('all',this)">All</div>
+      <div class="chip" onclick="setFilter('fav',this)">⭐ Favs</div>
+      <div class="chip" onclick="setFilter('nc',this)">North Carolina</div>
+      <div class="chip" onclick="setFilter('sc',this)">South Carolina</div>
+      <div class="chip" onclick="setFilter('fl',this)">Florida</div>
+      <div class="chip" onclick="setFilter('rj',this)">Rio de Janeiro</div>
+      <div class="chip" onclick="setFilter('rn',this)">RN</div>
+      <div class="chip" onclick="setFilter('ce',this)">Ceará</div>
+      <div class="chip" onclick="setFilter('scbr',this)">Santa Catarina</div>
+      <div class="chip" onclick="setFilter('near',this)">Nearby</div>
+    </div>
+    <div class="chrome-right">
+      <div class="layer-bar">
+        <span class="lb on" id="lb-sat" onclick="setLayer('sat')">Sat</span>
+        <span class="lb" id="lb-wind" onclick="setLayer('wind')">Wind</span>
+        <span class="lb" id="lb-rain" onclick="setLayer('rain')">Rain</span>
+      </div>
+      <div class="panel-toggles">
+        <div class="ptgl-btn" id="map-toggle-btn"   onclick="toggleMapPanel()"   title="Hide map"><svg width="15" height="14" viewBox="0 0 16 15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polygon points="1,3 5.5,1.5 10.5,4 15,2.5 15,12.5 10.5,14 5.5,11.5 1,13"/><line x1="5.5" y1="1.5" x2="5.5" y2="11.5"/><line x1="10.5" y1="4" x2="10.5" y2="14"/></svg><span>Map</span></div>
+        <div class="ptgl-btn" id="list-toggle-btn"  onclick="toggleListPanel()"  title="Hide spot list"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M1.5 8C3 5 5 3.5 8 3.5S13 5 14.5 8C13 11 11 12.5 8 12.5S3 11 1.5 8z"/><circle cx="8" cy="8" r="2"/><line x1="2.5" y1="13.5" x2="13.5" y2="2.5" stroke-width="1.9"/></svg><span>List</span></div>
+        <div class="ptgl-btn" id="panel-toggle-btn" onclick="toggleBpCollapse()" title="Hide panel"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M1.5 8C3 5 5 3.5 8 3.5S13 5 14.5 8C13 11 11 12.5 8 12.5S3 11 1.5 8z"/><circle cx="8" cy="8" r="2"/><line x1="2.5" y1="13.5" x2="13.5" y2="2.5" stroke-width="1.9"/></svg><span>Panel</span></div>
+      </div>
+      <div class="tilt-btn" id="tilt-btn" onclick="toggleTilt()">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="6.5"/><path d="M8 2v3M8 11v3M2 8h3M11 8h3"/></svg>
+      </div>
+      <div class="temp-toggle">
+        <div class="tt-btn active" id="tc-btn" onclick="setTemp('C')">°C</div>
+        <div class="tt-btn" id="tf-btn" onclick="setTemp('F')">°F</div>
+      </div>
+      <button class="share-btn" onclick="openShare()">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"><circle cx="4" cy="8" r="1.8"/><circle cx="12" cy="3" r="1.8"/><circle cx="12" cy="13" r="1.8"/><line x1="5.7" y1="7" x2="10.3" y2="4"/><line x1="5.7" y1="9" x2="10.3" y2="12"/></svg>
+        Share
+      </button>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main-body" id="main-body">
+
+    <!-- TOP ROW: map + spot list -->
+    <div class="top-row" id="top-row">
+
+    <!-- MAP COLUMN -->
+    <div class="left-col" id="left-col" style="width:52%;">
+      <div class="map-area" id="map-area">
+        <div id="mc"></div>
+        <svg id="map-rose" width="280" height="280" viewBox="0 0 280 280"></svg>
+        <canvas id="map-arrows"></canvas>
+        <div id="map-forecast-label"></div>
+        <div class="map-pins" id="pins"></div>
+        <div id="map-scale"></div>
+        <div class="map-top-left">
+          <button class="map-ctrl-btn" id="map-photos-btn" onclick="openPhotos()" title="View photos">
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4.5" width="14" height="9.5" rx="2"/><circle cx="8" cy="9.5" r="2.5"/><path d="M5.5 4.5l1.2-2h2.6l1.2 2"/></svg>
+          </button>
+          <button class="map-ctrl-btn" id="map-setview-btn" onclick="openSetViewPopup()" title="Save current map view as default for this spot">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1a4.5 4.5 0 014.5 4.5C12.5 9.5 8 15 8 15S3.5 9.5 3.5 5.5A4.5 4.5 0 018 1z"/><circle cx="8" cy="5.5" r="1.6"/></svg>
+          </button>
+          <div id="setview-popup">
+            <div class="svp-title">Pin · <span id="svp-spot-name"></span></div>
+            <input id="svp-comment" type="text" placeholder="Add a comment (optional)" maxlength="140"
+              onkeydown="if(event.key==='Enter')confirmSetView();if(event.key==='Escape')closeSetViewPopup()"/>
+            <div class="svp-actions">
+              <button class="svp-btn svp-primary" onclick="confirmSetView()">Save</button>
+              <button class="svp-btn svp-danger" id="svp-remove-btn" onclick="resetSpotView()">Remove</button>
+              <button class="svp-btn" onclick="closeSetViewPopup()">Cancel</button>
+            </div>
+          </div>
+        </div>
+        <div class="map-bot-overlay">
+          <div style="background:rgba(0,0,0,.52);border-radius:99px;padding:4px 10px;font-size:11px;color:rgba(255,255,255,.8);" id="map-status"></div>
+          <div class="map-sources">
+            <span class="src-badge" title="Wind, gusts, rain, air temp">🌤 Open-Meteo</span>
+            <span class="src-badge" title="Wave height &amp; period">🌊 Open-Meteo Marine</span>
+            <span class="src-badge" title="Water temperature at nearest station">⚓ NOAA CO-OPS</span>
+            <span class="src-badge">🗺 ESRI / CARTO</span>
+          </div>
+        </div>
+      </div>
+      <div class="col-resize" id="col-resize"><div class="col-resize-line"></div></div>
+    </div>
+
+    <!-- LIST COLUMN -->
+    <div class="right-col" id="right-col">
+      <div class="wind-legend" id="wind-legend"></div>
+      <div class="spot-list" id="spot-list"></div>
+    </div>
+
+    </div><!-- end top-row -->
+
+    <!-- ROW RESIZE HANDLE (full width) -->
+    <div class="row-resize" id="row-resize"><div class="rr-grip"><span></span><span></span><span></span></div></div>
+
+    <!-- BOTTOM PANEL — full width -->
+    <div class="bottom-panel" id="bottom-panel">
+      <div class="bp-head" id="bp-head">
+        <div class="bp-head-left">
+          <span class="bp-spot-name" id="bp-spot-name">—</span>
+          <span class="bp-pill" id="bp-pill"></span>
+          <span class="bp-datetime" id="bp-datetime"></span>
+        </div>
+        <div class="bp-head-right">
+          <div class="bp-tabs">
+            <div class="bp-tab active" id="bpt-pro" onclick="setBpTab('pro')">Forecast</div>
+            <div class="bp-tab" id="bpt-week" onclick="setBpTab('week')">7 days</div>
+            <div class="bp-tab" id="bpt-wg" onclick="window.open('https://www.windguru.cz/62','_blank')" title="Open WindGuru in new tab">WindGuru ↗</div>
+          </div>
+          <div class="bp-ctrl-group bp-nav-btns" id="bp-nav-btns" style="display:none;">
+            <button class="bp-ctrl-btn bp-nav-btn" onclick="bpScrollDay(-1)" title="Previous day">&#8249;</button>
+            <button class="bp-ctrl-btn bp-nav-btn" onclick="bpScrollNow()"   title="Jump to now">&#9679;</button>
+            <button class="bp-ctrl-btn bp-nav-btn" onclick="bpScrollDay(1)"  title="Next day">&#8250;</button>
+          </div>
+          <div class="bp-ctrl-group" id="bp-label-ctrls">
+            <button class="bp-ctrl-btn bp-legend-btn active" id="bp-legend-btn" onclick="toggleBpLegend()" title="Hide legend">Legend</button>
+            <button class="bp-ctrl-btn" onclick="setBpFontSize(-1)" title="Decrease font size">A&#8722;</button>
+            <button class="bp-ctrl-btn" onclick="setBpFontSize(1)"  title="Increase font size">A+</button>
+            <button class="bp-ctrl-btn" id="bp-side-btn" onclick="toggleBpLabelSide()" title="Toggle label side">&#8594;</button>
+          </div>
+          <button class="bp-collapse" id="bp-collapse" onclick="toggleBpCollapse()" title="Hide panel"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M1.5 8C3 5 5 3.5 8 3.5S13 5 14.5 8C13 11 11 12.5 8 12.5S3 11 1.5 8z"/><circle cx="8" cy="8" r="2"/><line x1="2.5" y1="13.5" x2="13.5" y2="2.5" stroke-width="1.9"/></svg></button>
+        </div>
+      </div>
+      <div class="bp-body" id="bp-body"></div>
+    </div>
+
+    <!-- DETAIL PANEL -->
+    <div class="detail-overlay" id="dp" style="position:absolute;">
+      <div class="dp-head">
+        <div><div class="dp-name" id="dp-name">—</div><div class="dp-sub" id="dp-sub">—</div></div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span style="font-size:12px;font-weight:500;padding:4px 10px;border-radius:6px;" id="dp-pill"></span>
+          <button class="dp-icon-btn" id="dp-fav-btn" onclick="toggleFav()" title="Favourite"></button>
+          <button class="dp-icon-btn dp-priv-btn" id="dp-priv-btn" onclick="togglePrivate()" title="Visibility"></button>
+          <div class="dp-close" onclick="closeDetail()" title="Hide detail"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M1.5 8C3 5 5 3.5 8 3.5S13 5 14.5 8C13 11 11 12.5 8 12.5S3 11 1.5 8z"/><circle cx="8" cy="8" r="2"/><line x1="2.5" y1="13.5" x2="13.5" y2="2.5" stroke-width="1.9"/></svg></div>
+        </div>
+      </div>
+      <div class="dp-tabs">
+        <div class="dp-tab active" id="dpt-today">Today</div>
+      </div>
+      <div class="dp-scroll" id="dp-body"></div>
+    </div>
+
+    <!-- PHOTOS -->
+    <div class="photos-modal-bg" id="photos-modal">
+      <div class="photos-modal">
+        <div class="photos-head">
+          <div>
+            <div class="photos-title">📷 Photos</div>
+            <div class="photos-spot-name" id="photos-spot-name">—</div>
+          </div>
+          <div class="dp-close" onclick="closePhotos()">&#x2715;</div>
+        </div>
+        <div class="photos-grid"></div>
+        <div class="photos-footer"></div>
+      </div>
+    </div>
+
+    <!-- CAM -->
+    <div class="cam-modal-bg" id="cam-modal">
+      <div class="cam-modal">
+        <div class="cam-head"><div class="cam-title" id="cam-title">Camera</div><div class="dp-close" onclick="closeCam()">&#x2715;</div></div>
+        <div class="cam-frame"><canvas id="cam-canvas"></canvas><div class="cam-live-badge" id="cam-live-badge">LIVE</div><div class="cam-unavail" id="cam-unavail" style="display:none">No camera</div></div>
+        <div class="cam-info" id="cam-info"></div>
+      </div>
+    </div>
+
+    <!-- SHARE -->
+    <div class="share-modal-bg" id="share-modal">
+      <div class="share-modal">
+        <div class="share-title">Share forecast</div>
+        <div class="share-sub">Send current conditions to WhatsApp</div>
+        <div class="share-preview" id="share-preview"></div>
+        <div class="share-actions">
+          <button class="share-wa" onclick="sendWhatsApp()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="#fff"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.136.562 4.14 1.542 5.877L.054 23.5l5.773-1.516A11.943 11.943 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.885 0-3.648-.523-5.148-1.427l-.37-.22-3.428.9.916-3.342-.24-.383A9.943 9.943 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+            WhatsApp
+          </button>
+          <button class="share-copy" id="copy-btn" onclick="copyText()">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="5" y="5" width="9" height="9" rx="2"/><path d="M11 5V3a2 2 0 00-2-2H3a2 2 0 00-2 2v6a2 2 0 002 2h2"/></svg>
+            Copy
+          </button>
+        </div>
+        <div class="share-cancel" onclick="closeShare()">Cancel</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADD KITE SPOT PANEL -->
+  <div class="addspot-panel" id="addspot-panel">
+    <div class="addspot-header">
+      <div class="addspot-title">
+        <svg width="15" height="17" viewBox="0 0 15 17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M7.5 1C4.46 1 2 3.46 2 6.5c0 4.75 5.5 9.5 5.5 9.5s5.5-4.75 5.5-9.5C13 3.46 10.54 1 7.5 1z"/>
+          <line x1="7.5" y1="4.5" x2="7.5" y2="8.5"/>
+          <line x1="5.5" y1="6.5" x2="9.5" y2="6.5"/>
+        </svg>
+        Add Kite Spot
+      </div>
+      <button class="addspot-close" onclick="toggleAddSpot()" title="Close">
+        <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="2" y1="2" x2="12" y2="12"/><line x1="12" y1="2" x2="2" y2="12"/></svg>
+      </button>
+    </div>
+
+    <div class="addspot-body">
+
+      <div class="addspot-section">
+        <div class="addspot-section-title">Identity</div>
+        <label class="addspot-label">Name <span class="addspot-req">*</span></label>
+        <input class="addspot-input" type="text" placeholder="e.g. Praia do Pepê" id="as-name"/>
+        <label class="addspot-label">Short name</label>
+        <input class="addspot-input" type="text" placeholder="e.g. Pepê" id="as-short"/>
+        <label class="addspot-label">Region</label>
+        <input class="addspot-input" type="text" placeholder="e.g. Barra da Tijuca, RJ" id="as-region"/>
+        <label class="addspot-label">State / Country code</label>
+        <input class="addspot-input" type="text" placeholder="e.g. rj · ce · nc · fl" id="as-state" style="text-transform:lowercase"/>
+      </div>
+
+      <div class="addspot-section">
+        <div class="addspot-section-title">Location</div>
+        <div class="addspot-row2">
+          <div>
+            <label class="addspot-label">Latitude <span class="addspot-req">*</span></label>
+            <input class="addspot-input" type="number" step="0.0001" placeholder="-23.006" id="as-lat"/>
+          </div>
+          <div>
+            <label class="addspot-label">Longitude <span class="addspot-req">*</span></label>
+            <input class="addspot-input" type="number" step="0.0001" placeholder="-43.346" id="as-lon"/>
+          </div>
+        </div>
+        <button class="addspot-pick-btn" id="as-pick-btn" title="Click on map to set coordinates">
+          <svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 1a4 4 0 014 4c0 4-4 8-4 8S3 9 3 5a4 4 0 014-4z"/><circle cx="7" cy="5" r="1.3"/></svg>
+          Pick on map
+        </button>
+        <label class="addspot-label">Water depth (m)</label>
+        <input class="addspot-input" type="number" step="0.1" placeholder="1.5" id="as-depth"/>
+      </div>
+
+      <div class="addspot-section">
+        <div class="addspot-section-title">Links</div>
+        <label class="addspot-label">Camera URL</label>
+        <input class="addspot-input" type="url" placeholder="https://…/cam.jpg" id="as-cam-url"/>
+        <label class="addspot-label">Spot / Local URL</label>
+        <input class="addspot-input" type="url" placeholder="https://windfinder.com/…" id="as-local-url"/>
+      </div>
+
+      <div class="addspot-section">
+        <div class="addspot-section-title">Details</div>
+        <label class="addspot-label">Description</label>
+        <textarea class="addspot-textarea" rows="4" placeholder="Wind direction, season, water conditions…" id="as-desc"></textarea>
+        <div class="addspot-checks">
+          <label class="addspot-check"><input type="checkbox" id="as-fav"/> Favourite</label>
+          <label class="addspot-check"><input type="checkbox" id="as-cam"/> Has camera</label>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="addspot-footer">
+      <button class="addspot-cancel" onclick="toggleAddSpot()">Cancel</button>
+      <button class="addspot-submit" disabled>Add Spot</button>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="/js/data.js"></script>
+<script src="/js/compass.js"></script>
+<script src="/js/map.js"></script>
+<script src="/js/list.js"></script>
+<script src="/js/detail.js"></script>
+<script src="/js/cam.js"></script>
+<script src="/js/realtime.js"></script>
+<script src="/js/app.js"></script>
+</body>
+</html>

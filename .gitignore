@@ -1,0 +1,7 @@
+.env
+data/*.db
+data/*.db-shm
+data/*.db-wal
+renderer/node_modules/
+__pycache__/
+*.pyc

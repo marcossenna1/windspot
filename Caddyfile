@@ -1,0 +1,20 @@
+wk1.duckdns.org {
+    # API — strip prefix /api before proxying to FastAPI
+    handle /api/* {
+        uri strip_prefix /api
+        reverse_proxy api:8000
+    }
+
+    # Frontend SPA
+    handle {
+        reverse_proxy dashboard:80
+    }
+}
+
+hr10.duckdns.org {
+    reverse_proxy hr-server:5000 {
+        header_up X-Real-IP        {remote_host}
+        header_up X-Forwarded-For  {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+    }
+}

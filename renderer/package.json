@@ -1,0 +1,18 @@
+{
+  "name": "kitesurf-renderer",
+  "version": "1.0.0",
+  "description": "OG image renderer — Satori + Sharp",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "satori": "^0.11.0",
+    "sharp": "^0.33.5",
+    "@resvg/resvg-js": "^2.6.2",
+    "@fontsource/inter": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

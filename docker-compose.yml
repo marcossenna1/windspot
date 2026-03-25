@@ -1,0 +1,80 @@
+version: "3.9"
+
+services:
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: windspot-caddy
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - default
+      - infra_proxy
+    restart: unless-stopped
+    depends_on:
+      - dashboard
+      - api
+
+  dashboard:
+    build: .
+    container_name: kitesurf-dashboard
+    ports:
+      - "3000:80"
+    volumes:
+      - ./app:/usr/share/nginx/html:ro
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+
+  api:
+    build: ./api
+    container_name: kitesurf-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/data
+    environment:
+      - DB_PATH=/data/kitesurf.db
+      - JWT_SECRET=${JWT_SECRET}
+      - OPEN_METEO_BASE=https://api.open-meteo.com/v1
+      - STORMGLASS_KEY=${STORMGLASS_KEY:-}
+      - NOAA_BASE=https://api.tidesandcurrents.noaa.gov
+      - FORECAST_REFRESH_MINS=${FORECAST_REFRESH_MINS:-15}
+      - SSE_POLL_SECS=${SSE_POLL_SECS:-5}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    restart: unless-stopped
+
+  renderer:
+    build: ./renderer
+    container_name: kitesurf-renderer
+    ports:
+      - "8001:8001"
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:8001/health', r => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+
+volumes:
+  caddy_data:
+  caddy_config:
+
+networks:
+  infra_proxy:
+    external: true
+
+# no named volumes — SQLite file lives in ./data on host disk
